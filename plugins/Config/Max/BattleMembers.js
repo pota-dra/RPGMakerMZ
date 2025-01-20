@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-バトルメンバーの最大数変更 Ver2.0.2(2025/1/18)
+バトルメンバーの最大数変更 Ver2.0.3(2025/1/20)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Config/Max/BattleMembers.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver2.0.3: バトルメンバーの最大数を変数で管理する機能追加
 * Ver2.0.2: ヘルプ更新
 * Ver2.0.1: 他メニュー系のプラグインとの競合対策を追加
 - Sprite_Gauge を変更するのではなく、Sprite_BattleStatusGaugeクラスを作成し継承するように変更
@@ -36,6 +37,13 @@ https://opensource.org/licenses/mit-license.php
 @max 999999999999999
 @min 1
 
+    @param MaxBattleVariable
+    @parent MaxBattleMembers
+    @type variable
+    @text バトルメンバー最大数変数
+    @desc バトルメンバー最大数を管理する変数
+    @default 0
+
 @param MaxInBattleMember
 @type boolean
 @text 戦闘時バトルメンバー最大数変更
@@ -45,14 +53,21 @@ https://opensource.org/licenses/mit-license.php
 @off 変更しない
 @default false
 
-@param MaxInBattleMembers
-@parent MaxInBattleMember
-@type number
-@text 戦闘中バトルメンバー最大数
-@desc 戦闘中のバトルメンバーの最大数
-@default 5
-@max 999999999999999
-@min 1
+    @param MaxInBattleMembers
+    @parent MaxInBattleMember
+    @type number
+    @text 戦闘中バトルメンバー最大数
+    @desc 戦闘中のバトルメンバーの最大数
+    @default 5
+    @max 999999999999999
+    @min 1
+
+    @param MaxInBattleVariable
+    @parent MaxInBattleMember
+    @type variable
+    @text 戦闘中バトルメンバー最大数変数
+    @desc 戦闘中バトルメンバー最大数を管理する変数
+    @default 0
 
 @param EnableBattleMenu
 @type boolean
@@ -91,21 +106,44 @@ https://opensource.org/licenses/mit-license.php
     function Potadra_getPluginParams(plugin_name) {
         return Potadra_isPlugin(plugin_name) ? PluginManager.parameters(plugin_name) : false;
     }
+    function Potadra_checkVariable(variable_no) {
+        return variable_no > 0 && variable_no <= 5000;
+    }
 
     // パラメータ用変数
     const plugin_name = Potadra_getPluginName();
     const params      = PluginManager.parameters(plugin_name);
 
     // 各パラメータ用変数
-    const MaxBattleMembers   = Number(params.MaxBattleMembers || 5);
-    const MaxInBattleMember  = Potadra_convertBool(params.MaxInBattleMember);
-    const MaxInBattleMembers = Number(params.MaxInBattleMembers || 5);
-    const EnableBattleMenu   = Potadra_convertBool(params.EnableBattleMenu);
-    const FiveParty          = Potadra_convertBool(params.FiveParty);
+    const MaxBattleMembers    = Number(params.MaxBattleMembers || 5);
+    const MaxBattleVariable   = Number(params.MaxBattleVariable || 0);
+    const MaxInBattleMember   = Potadra_convertBool(params.MaxInBattleMember);
+    const MaxInBattleMembers  = Number(params.MaxInBattleMembers || 5);
+    const MaxInBattleVariable = Number(params.MaxBattleVariable || 0);
+    const EnableBattleMenu    = Potadra_convertBool(params.EnableBattleMenu);
+    const FiveParty           = Potadra_convertBool(params.FiveParty);
 
     // 他プラグイン連携(パラメータ取得)
     const max_level_params = Potadra_getPluginParams('MaxLevel');
     const MaxLevelMenu     = max_level_params ? Potadra_convertBool(max_level_params.MaxLevelMenu) : false;
+
+    // バトルメンバー最大数
+    function maxBattleMembers() {
+        if (!Potadra_checkVariable(MaxBattleVariable)) return MaxBattleMembers;
+
+        let max_battle_members = $gameVariables.value(MaxBattleVariable);
+        if (max_battle_members === 0) max_battle_members = MaxBattleMembers;
+        return max_battle_members;
+    }
+
+    // 戦闘中バトルメンバー最大数
+    function maxInBattleMembers() {
+        if (!Potadra_checkVariable(MaxInBattleVariable)) return MaxInBattleMembers;
+
+        let max_in_battle_members = $gameVariables.value(axInBattleVariable);
+        if (max_in_battle_members === 0) max_battle_members = MaxInBattleMembers;
+        return max_in_battle_members;
+    }
 
     //------------------------------------------------------------------------------
     // Game_Party
@@ -122,9 +160,9 @@ https://opensource.org/licenses/mit-license.php
      */
     Game_Party.prototype.maxBattleMembers = function() {
         if (MaxInBattleMember && this.inBattle()) {
-            return MaxInBattleMembers;
+            return maxInBattleMembers();
         } else {
-            return MaxBattleMembers;
+            return maxBattleMembers();
         }
     };
 
@@ -146,7 +184,7 @@ https://opensource.org/licenses/mit-license.php
             let i = 1;
             $gameTemp._p_actorIds = [];
             for (const actor of $gameParty.allMembers()) {
-                if (i > MaxBattleMembers) {
+                if (i > maxBattleMembers()) {
                     $gameTemp._p_actorIds.push(actor.actorId());
                     $gameParty.removeActor(actor.actorId());
                 }
@@ -175,7 +213,7 @@ https://opensource.org/licenses/mit-license.php
          * @returns {number}
          */
         Window_MenuStatus.prototype.numVisibleRows = function() {
-            switch (MaxBattleMembers) {
+            switch (maxBattleMembers()) {
                 case 4:
                     return 4;
                 default:
@@ -292,7 +330,7 @@ https://opensource.org/licenses/mit-license.php
 
     if (EnableBattleMenu) {
         function battleMembers() {
-            return MaxInBattleMember ? MaxInBattleMembers : MaxBattleMembers;
+            return MaxInBattleMember ? maxInBattleMembers() : maxBattleMembers();
         }
 
         /**

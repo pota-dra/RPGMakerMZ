@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-コアスクリプト Ver0.5.3(2025/1/18)
+コアスクリプト Ver0.5.4(2025/1/20)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Base/CoreScript.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver0.5.4: スキル・アイテムに使用効果TP増加がある場合、最大TPのとき使用不可になる機能追加
 * Ver0.5.3
 - プレイヤーの初期向きを StartPosition.js に移行
 - リファクタリング
@@ -90,6 +91,14 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
 @decimals 2
 @default 1.0
 @min 0
+
+@param UseDisableMaxTp
+@type boolean
+@text TP最大時TP増加アイテム禁止
+@desc TP最大時にTP増加アイテムの使用を禁止するか
+@on 禁止する
+@off 禁止しない
+@default false
 */
 
 /*~struct~ItemList:
@@ -164,6 +173,7 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
     const ChangeHitFormula   = Potadra_convertBool(params.ChangeHitFormula);
     const EnableLukState     = Potadra_convertBool(params.EnableLukState);
     const ExpRate            = Number(params.ExpRate || 1);
+    const UseDisableMaxTp    = Potadra_convertBool(params.UseDisableMaxTp);
 
     // 他プラグイン連携(プラグインの導入有無)
     const NameItem = Potadra_isPlugin('NameItem');
@@ -304,4 +314,26 @@ RPGツクールMZに標準で搭載されていても良さそうな機能を設
     Game_Actor.prototype.benchMembersExpRate = function() {
         return $dataSystem.optExtraExp ? ExpRate : 0;
     };
+
+    // TP最大時TP増加アイテム使用可能
+    if (UseDisableMaxTp) {
+        /**
+         * 
+         *
+         * @param {} target - 
+         * @param {} effect - 
+         * @returns {} 
+         */
+        const _Game_Action_testItemEffect = Game_Action.prototype.testItemEffect;
+        Game_Action.prototype.testItemEffect = function(target, effect) {
+            let value = _Game_Action_testItemEffect.apply(this, arguments);
+            if (!value) return false;
+
+            switch (effect.code) {
+                case Game_Action.EFFECT_GAIN_TP:
+                    value = target.tp < target.maxTp() || effect.value1 < 0
+            }
+            return value;
+        };
+    }
 })();

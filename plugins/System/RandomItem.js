@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-ランダムアイテム入手 Ver2.0.0(2025/1/18)
+ランダムアイテム入手 Ver2.0.1(2025/1/20)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/RandomItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver2.0.1: 減らす機能に装備の場合は装備品も含めるか選択できるパラメータ追加
 * Ver2.0.0
 - プラグインコマンドが長くなるため、SE設定をstructに変更（再設定が必要になります）
 - SKM_GetInformationMZ に対応
@@ -479,6 +480,16 @@ https://opensource.org/licenses/mit-license.php
     @decimals 2
     @default 100
 
+    @param includeEquip
+    @parent use_name
+    @type boolean
+    @text 装備品も含める
+    @desc 装備品も含めるか
+    ※ 武器 OR 防具の場合のみ有効
+    @on 含める
+    @off 含めない
+    @default false
+
     @param item
     @parent use_name
     @type item
@@ -627,12 +638,13 @@ https://opensource.org/licenses/mit-license.php
         // 必要アイテムがある場合その処理
         if (use_lists) {
             for (let i = 0; i < use_lists.length; i++) {
-                const use_info  = JSON.parse(use_lists[i]);
-                const use_name  = use_info.use_name;
-                const use_count = Number(use_info.use_count || 1);
-                const use_break = Number(use_info.use_break || 0);
-                const item      = Potadra_itemSearch(use_name);
-                const count     = $gameParty.numItems(item);
+                const use_info     = JSON.parse(use_lists[i]);
+                const use_name     = use_info.use_name;
+                const use_count    = Number(use_info.use_count || 1);
+                const use_break    = Number(use_info.use_break || 0);
+                const includeEquip = Potadra_convertBool(use_info.includeEquip);
+                const item         = Potadra_itemSearch(use_name);
+                const count        = $gameParty.numItems(item);
 
                 if (i === 0) {
                     first_item  = item;
@@ -643,7 +655,7 @@ https://opensource.org/licenses/mit-license.php
                 // 所持数(装備品を含めない) >= 必要数
                 if (count >= use_count && use_break > 0 && Potadra_random(use_break)) {
                     // 消費処理
-                    $gameParty.gainItem(item, -1 * use_count, false);
+                    $gameParty.gainItem(item, -1 * use_count, includeEquip);
                     use_item = true;
                     break;
                 }

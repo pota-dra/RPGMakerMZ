@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-敵グループランダム決定 Ver1.5.1(2025/1/18)
+敵グループランダム決定 Ver1.5.2(2025/1/20)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/Battle/Troop/RandomTroop.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver1.5.2: ヘルプ更新
 * Ver1.5.1
 - 自動整列の判定が正しくなかったバグ修正
 - <空中>タグにY座標を指定できるように修正
@@ -90,13 +91,13 @@ Y座標を -50 します。<空中>を指定したときより低い位置に移
 フロントビュー用のプラグインであるため  
 サイドビューの整列機能は実装の予定はありません
 
-※ 注意  
-敵グループで設定したモンスター数より、<MAX:X>で指定したXの値が大きい場合  
-超過したモンスターについては、フロントビュー用の整列で配置が決定します
-
 砂川さんの NRP_TroopRandomFormation.js を使用することで  
 サイドビューでも配置を整列出来るため、そちらをご利用ください  
 https://newrpg.seesaa.net/article/475049887.html
+
+※ 注意  
+敵グループで設定したモンスター数より、<MAX:X>で指定したXの値が大きい場合  
+超過したモンスターについては、フロントビュー用の整列で配置が決定します
 
 @param SkyName
 @type string

@@ -1,12 +1,13 @@
 /*:
 @plugindesc
-アイテム入手 Ver2.0.0(2025/1/18)
+アイテム入手 Ver2.0.1(2025/1/20)
 
 @url https://raw.githubusercontent.com/pota-gon/RPGMakerMZ/main/plugins/System/Name/NameGetItem.js
 @target MZ
 @author ポテトードラゴン
 
 ・アップデート情報
+* Ver2.0.1: 減らす機能に装備の場合は装備品も含めるか選択できるパラメータ追加
 * Ver2.0.0
 - プラグインコマンドが長くなるため、SE設定をstructに変更（再設定が必要になります）
 - SKM_GetInformationMZ に対応
@@ -61,6 +62,15 @@ https://opensource.org/licenses/mit-license.php
     @desc 入手するアイテムの個数
     @default 1
     @min -999999999999999
+
+    @param includeEquip
+    @type boolean
+    @text 装備品も含める
+    @desc 装備品も含めるか
+    ※ アイテムを減らす場合のみ有効
+    @on 含める
+    @off 含めない
+    @default false
 
     @arg message
     @type multiline_string
@@ -137,6 +147,13 @@ https://opensource.org/licenses/mit-license.php
     function Potadra_isPlugin(plugin_name) {
         return PluginManager._scripts.includes(plugin_name);
     }
+    function Potadra_convertBool(bool) {
+        if (bool === "false" || bool === '' || bool === undefined) {
+            return false;
+        } else {
+            return true;
+        }
+    }
     function Potadra_convertAudio(struct_audio, audio_name) {
         if (!struct_audio) return false;
         let audio;
@@ -185,10 +202,11 @@ https://opensource.org/licenses/mit-license.php
 
     // プラグインコマンド(アイテム入手)
     PluginManager.registerCommand(plugin_name, "get_item", function(args) {
-        const name    = String(args.name);
-        const count   = Number(args.count || 1);
-        const message = String(args.message);
-        const se      = Potadra_convertAudio(args.se, 'Item3');
+        const name         = String(args.name);
+        const count        = Number(args.count || 1);
+        const includeEquip = Potadra_convertBool(args.includeEquip);
+        const message      = String(args.message);
+        const se           = Potadra_convertAudio(args.se, 'Item3');
 
         const item    = Potadra_itemSearch(name);
         if (GetInformation || SKM_GetInformationMZ) {
@@ -207,7 +225,7 @@ https://opensource.org/licenses/mit-license.php
                 return false;
             }
         } else {
-            $gameParty.gainItem(item, count);
+            $gameParty.gainItem(item, count, includeEquip);
         }
         if (GetInformation || SKM_GetInformationMZ) {
             CommonPopupManager._popEnable = false;
